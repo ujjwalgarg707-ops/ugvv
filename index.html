@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Netflix Reseller Panel</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    :root {
+      --bg: #020617;
+      --bg-elevated: #020617;
+      --card-bg: rgba(15,23,42,0.92);
+      --card-border: rgba(148,163,184,0.25);
+      --accent: #6366f1;
+      --accent-soft: rgba(99,102,241,0.18);
+      --accent-strong: #4f46e5;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text-main);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(168,85,247,0.18), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(37,99,235,0.25), transparent 60%),
+        radial-gradient(circle at 0% 100%, rgba(236,72,153,0.25), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: linear-gradient(to right, rgba(15,23,42,0.98), rgba(15,23,42,0.92));
+      border-bottom: 1px solid rgba(148,163,184,0.22);
+      padding: 16px 28px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    header h1::before {
+      content: "";
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      background: conic-gradient(from 180deg, #f97316, #facc15, #22c55e, #0ea5e9, #6366f1, #f97316);
+      box-shadow: 0 0 18px rgba(129,140,248,0.8);
+    }
+    header span {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    main {
+      padding: 0 24px 40px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .main-nav {
+      display: flex;
+      gap: 6px;
+      padding: 14px 0 18px;
+      border-bottom: 1px solid rgba(148,163,184,0.2);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .main-nav .tab {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.35);
+      background: rgba(15,23,42,0.6);
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .main-nav .tab:hover {
+      background: rgba(30,41,59,0.9);
+      color: var(--text-main);
+      border-color: rgba(148,163,184,0.5);
+    }
+    .main-nav .tab.active {
+      background: linear-gradient(135deg, var(--accent-strong), #4338ca);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 8px 20px rgba(79,70,229,0.5);
+    }
+    .section-panel {
+      display: none;
+    }
+    .section-panel.active {
+      display: block;
+      animation: fadeIn 0.25s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .section-panel .grid { margin-bottom: 20px; }
+    .section-panel .card { max-width: 100%; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .card {
+      position: relative;
+      background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(17,24,39,0.96));
+      border-radius: 18px;
+      padding: 18px 16px 16px;
+      border: 1px solid var(--card-border);
+      box-shadow:
+        0 18px 40px rgba(15,23,42,0.9),
+        0 0 0 1px rgba(15,23,42,0.9);
+      overflow: hidden;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at top left, rgba(129,140,248,0.16), transparent 55%);
+      opacity: 0.6;
+    }
+    .card > * {
+      position: relative;
+      z-index: 1;
+    }
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #c4c9ff;
+      border-bottom: 1px solid rgba(55,65,81,0.7);
+      padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card h2::after {
+      content: "";
+      width: 42px;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(to right, var(--accent), transparent);
+    }
+
+    .metric {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px 12px;
+      margin-bottom: 8px;
+    }
+    label {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 7px 9px;
+      border-radius: 9px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at 0 0, rgba(15,23,42,0.9), rgba(15,23,42,0.98));
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    input::placeholder,
+    textarea::placeholder {
+      color: #6b7280;
+    }
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(129,140,248,0.6);
+      background: radial-gradient(circle at 0 0, rgba(15,23,42,1), rgba(15,23,42,0.98));
+    }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    button {
+      padding: 9px 13px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent-strong), #22c55e);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.05s ease, box-shadow 0.18s ease, filter 0.12s ease;
+      box-shadow: 0 12px 28px rgba(79,70,229,0.7);
+      white-space: nowrap;
+    }
+    button:hover {
+      filter: brightness(1.03);
+      box-shadow: 0 16px 34px rgba(79,70,229,0.85);
+    }
+    button:active {
+      transform: translateY(1px) scale(0.99);
+      box-shadow: 0 10px 24px rgba(79,70,229,0.6);
+    }
+
+    .btn-secondary {
+      background: radial-gradient(circle at 0 0, rgba(15,23,42,0.95), rgba(15,23,42,1));
+      border: 1px solid rgba(148,163,184,0.6);
+      color: var(--text-main);
+      box-shadow: none;
+    }
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(129,140,248,0.45);
+    }
+    .btn-small {
+      padding: 4px 9px;
+      font-size: 11px;
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid rgba(31,41,55,0.9);
+      background: radial-gradient(circle at 0 0, rgba(15,23,42,0.96), rgba(0,0,0,0.92));
+      margin-top: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th,
+    td {
+      padding: 7px 10px;
+      border-bottom: 1px solid rgba(31,41,55,0.85);
+      text-align: left;
+    }
+    th {
+      background: linear-gradient(to right, rgba(15,23,42,0.96), rgba(15,23,42,0.92));
+      color: var(--text-muted);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:nth-child(even) td {
+      background: rgba(15,23,42,0.9);
+    }
+    tr:nth-child(odd) td {
+      background: rgba(15,23,42,0.98);
+    }
+    tr:hover td {
+      background: rgba(30,64,175,0.36);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .tag-available { background: rgba(22,163,74,0.2); color: #bbf7d0; border: 1px solid rgba(34,197,94,0.4); }
+    .tag-full { background: rgba(185,28,28,0.22); color: #fecaca; border: 1px solid rgba(248,113,113,0.5); }
+    .tag-disabled { background: rgba(15,23,42,0.8); color: #e5e7eb; border: 1px dashed rgba(148,163,184,0.7); }
+    .tag-active { background: rgba(2,132,199,0.2); color: #bae6fd; border: 1px solid rgba(56,189,248,0.45); }
+    .tag-expired { background: rgba(127,29,29,0.3); color: #fecaca; border: 1px solid rgba(248,113,113,0.55); }
+    .tag-stopped { background: rgba(180,83,9,0.3); color: #fed7aa; border: 1px solid rgba(251,191,36,0.55); }
+
+    .small {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .whatsapp-preview {
+      background: radial-gradient(circle at 0 0, rgba(6,95,70,0.9), rgba(6,78,59,1));
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      white-space: pre-wrap;
+      margin-top: 8px;
+      border: 1px solid rgba(52,211,153,0.6);
+      box-shadow: 0 12px 28px rgba(5,150,105,0.6);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 2.2fr 1.8fr;
+      gap: 18px;
+    }
+    @media (max-width: 900px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    /* Mobile optimization */
+    @media (max-width: 640px) {
+      header {
+        padding: 12px 14px 10px;
+      }
+      header h1 {
+        font-size: 16px;
+      }
+      header span {
+        display: none;
+      }
+      main {
+        padding: 0 12px 28px;
+      }
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .card {
+        padding: 14px 12px 12px;
+        border-radius: 16px;
+      }
+      .card h2 {
+        font-size: 13px;
+      }
+      .metric {
+        font-size: 20px;
+      }
+      form {
+        grid-template-columns: 1fr !important;
+      }
+      button {
+        width: 100%;
+        justify-content: center;
+      }
+      .btn-small {
+        width: auto;
+      }
+      .main-nav {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 12px;
+      }
+      .main-nav .tab {
+        flex: 0 0 auto;
+        padding: 10px 14px;
+        width: auto; /* override global button width on mobile */
+      }
+    }
+
+    .alert-list {
+      font-size: 12px;
+      max-height: 190px;
+      overflow: auto;
+    }
+    .alert-item {
+      padding: 4px 0;
+      border-bottom: 1px dashed rgba(55,65,81,0.9);
+    }
+    .replacement-err {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(185,28,28,0.25);
+      border: 1px solid rgba(248,113,113,0.6);
+      color: #fecaca;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Nice thin scrollbars for tables / panels */
+    .table-scroll::-webkit-scrollbar,
+    .alert-list::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .table-scroll::-webkit-scrollbar-track,
+    .alert-list::-webkit-scrollbar-track {
+      background: rgba(15,23,42,0.9);
+    }
+    .table-scroll::-webkit-scrollbar-thumb,
+    .alert-list::-webkit-scrollbar-thumb {
+      background: rgba(148,163,184,0.7);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Netflix Reseller Management Panel</h1>
+      <span>Manage accounts, customers, warranties & replacements</span>
+    </div>
+  </header>
+
+  <main>
+    <nav class="main-nav" aria-label="Sections">
+      <button type="button" class="tab active" data-section="section-dashboard">Dashboard</button>
+      <button type="button" class="tab" data-section="section-accounts">Accounts</button>
+      <button type="button" class="tab" data-section="section-customers">Customers</button>
+      <button type="button" class="tab" data-section="section-replacements">Replacements & WhatsApp</button>
+    </nav>
+
+    <section id="section-dashboard" class="section-panel active">
+      <div class="grid">
+        <div class="card">
+          <h2>Dashboard</h2>
+          <div class="grid">
+            <div>
+              <div class="metric" id="metric-total-accounts">0</div>
+              <div class="metric-label">Total Accounts</div>
+            </div>
+            <div>
+              <div class="metric" id="metric-total-customers">0</div>
+              <div class="metric-label">Total Customers</div>
+            </div>
+            <div>
+              <div class="metric" id="metric-available-accounts">0</div>
+              <div class="metric-label">Accounts with Free Slots</div>
+            </div>
+            <div>
+              <div class="metric" id="metric-active-warranties">0</div>
+              <div class="metric-label">Active Warranties</div>
+            </div>
+            <div>
+              <div class="metric" id="metric-pending-requests">0</div>
+              <div class="metric-label">Pending Replacements</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Alerts & Warnings</h2>
+          <div class="alert-list" id="alerts-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-accounts" class="section-panel">
+      <div class="grid">
+        <div class="card">
+          <h2>Accounts Inventory</h2>
+          <form id="form-add-account">
+            <div>
+              <label>Email</label>
+              <input type="email" name="email" required placeholder="supplier@mail.com" />
+            </div>
+            <div>
+              <label>Password</label>
+              <input type="text" name="password" required placeholder="password" />
+            </div>
+            <div>
+              <label>Max Profiles</label>
+              <input type="number" name="maxProfiles" value="4" min="1" max="10" />
+            </div>
+            <div>
+              <label>Notes (optional)</label>
+              <input type="text" name="notes" placeholder="Supplier, plan type, etc." />
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button type="submit">Add Account</button>
+            </div>
+          </form>
+          <form id="form-account-find-and-stop" style="margin-top: 8px; grid-template-columns: 2fr 1fr;">
+            <div>
+              <label>Quick Disable by Email</label>
+              <input type="text" name="query" placeholder="Type part of account email" />
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button type="submit" class="btn-secondary">Mark Account Not Working</button>
+            </div>
+          </form>
+
+          <div class="small">Accounts with free slots will be used automatically when adding new customers.</div>
+
+          <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Slots</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="accounts-table-body"></tbody>
+          </table>
+          </div>
+
+          <div class="small" style="margin-top:8px;">Customers using the last selected / disabled account:</div>
+          <div class="table-scroll" id="account-customers-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-customers" class="section-panel">
+      <div class="grid">
+        <div class="card">
+          <h2>Customers (Auto Assignment)</h2>
+          <form id="form-add-customer">
+            <div>
+              <label>WhatsApp Number</label>
+              <input type="text" name="whatsapp" required placeholder="+91XXXXXXXXXX" />
+            </div>
+            <div>
+              <label>Profile Name</label>
+              <input type="text" name="profileName" placeholder="e.g. Rahul" />
+            </div>
+            <div>
+              <label>Purchase Date</label>
+              <input type="date" name="purchaseDate" />
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button type="submit">Add Customer & Assign</button>
+            </div>
+          </form>
+          <div class="small">Customer will be assigned to the first account that has free slots.</div>
+
+          <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>WhatsApp</th>
+                <th>Account</th>
+                <th>Profile</th>
+                <th>Warranty</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="customers-table-body"></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-replacements" class="section-panel">
+      <div class="grid">
+        <div class="card">
+          <h2>Replacement Requests</h2>
+          <form id="form-add-request">
+            <div>
+              <label>Customer (ID or WhatsApp)</label>
+              <input type="text" name="customerId" placeholder="e.g. 1 or +91XXXXXXXXXX" required />
+            </div>
+            <div>
+              <label>Reason</label>
+              <select name="reason">
+                <option value="household_error">Household error</option>
+                <option value="password_changed">Password changed</option>
+                <option value="not_working">Account not working</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label>Details (optional)</label>
+              <textarea name="details" placeholder="Describe the issue"></textarea>
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button type="submit">Submit & Auto-Replace</button>
+            </div>
+          </form>
+          <div id="replacement-error" class="replacement-err" style="display:none;"></div>
+          <div class="small">Only customers with active warranty will receive replacement automatically. Same customer will always get a <strong>different</strong> account; if none available, error will show.</div>
+
+          <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Reason</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="requests-table-body"></tbody>
+          </table>
+          </div>
+        </div>
+
+        <!-- WHATSAPP MESSAGE -->
+        <div class="card">
+          <h2>WhatsApp Login Message</h2>
+          <form id="form-wa-message">
+            <div>
+              <label>Customer (ID or WhatsApp)</label>
+              <input type="text" name="customerId" required placeholder="e.g. 1 or +91XXXXXXXXXX" />
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button type="submit">Generate Message</button>
+            </div>
+          </form>
+          <div class="whatsapp-preview" id="wa-preview">
+            Select a customer to generate message.
+          </div>
+          <div style="margin-top:8px; display:flex; gap:8px;">
+            <button class="btn-secondary" id="btn-copy-message">Copy Message</button>
+            <button class="btn-secondary" id="btn-open-wa">Open in WhatsApp</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function tabs() {
+      var tabs = document.querySelectorAll('.main-nav .tab');
+      var panels = document.querySelectorAll('.section-panel');
+      tabs.forEach(function(t) {
+        t.addEventListener('click', function() {
+          var id = t.getAttribute('data-section');
+          tabs.forEach(function(x) { x.classList.remove('active'); });
+          panels.forEach(function(p) { p.classList.remove('active'); });
+          t.classList.add('active');
+          var panel = document.getElementById(id);
+          if (panel) panel.classList.add('active');
+        });
+      });
+    })();
+  </script>
+
+  <script>
+    // In-memory "database" + localStorage persistence
+    let accounts = [];
+    let customers = [];
+    let replacementRequests = [];
+    let nextAccountId = 1;
+    let nextCustomerId = 1;
+    let nextRequestId = 1;
+    let editingAccountId = null;
+    let editingCustomerId = null;
+
+    const STORAGE_KEY = 'netflix_reseller_panel_v1';
+
+    function saveToStorage() {
+      const payload = {
+        accounts,
+        customers,
+        replacementRequests,
+        nextAccountId,
+        nextCustomerId,
+        nextRequestId,
+      };
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (e) {
+        console.warn('Could not save to localStorage', e);
+      }
+    }
+
+    function loadFromStorage() {
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        accounts = Array.isArray(data.accounts) ? data.accounts : [];
+        customers = Array.isArray(data.customers) ? data.customers : [];
+        replacementRequests = Array.isArray(data.replacementRequests) ? data.replacementRequests : [];
+        nextAccountId = typeof data.nextAccountId === 'number' ? data.nextAccountId : 1;
+        nextCustomerId = typeof data.nextCustomerId === 'number' ? data.nextCustomerId : 1;
+        nextRequestId = typeof data.nextRequestId === 'number' ? data.nextRequestId : 1;
+        return true;
+      } catch (e) {
+        console.warn('Could not load from localStorage', e);
+        return false;
+      }
+    }
+
+    // Pre-fill purchase date field with today's date for convenience
+    (function presetPurchaseDateField() {
+      const input = document.querySelector('input[name="purchaseDate"]');
+      if (input && !input.value) {
+        input.value = todayISO();
+      }
+    })();
+
+    // Utility functions
+    function todayISO() {
+      return new Date().toISOString().slice(0, 10);
+    }
+    function addDays(dateStr, days) {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    }
+    function isWarrantyActive(warrantyExpires) {
+      return new Date(warrantyExpires) >= new Date(todayISO());
+    }
+    function getUsedAccountIdsForCustomer(customer) {
+      const used = new Set();
+      used.add(Number(customer.accountId));
+      replacementRequests.forEach(r => {
+        if (r.customerId !== customer.id) return;
+        if (r.oldAccountId != null) used.add(Number(r.oldAccountId));
+        if (r.newAccountId != null) used.add(Number(r.newAccountId));
+      });
+      return Array.from(used);
+    }
+
+    function autoAssignAccount(excludeAccountIdOrIds) {
+      const excludeIds = excludeAccountIdOrIds == null
+        ? []
+        : Array.isArray(excludeAccountIdOrIds)
+          ? excludeAccountIdOrIds.map(id => Number(id))
+          : [Number(excludeAccountIdOrIds)];
+      return (
+        accounts.find(
+          a =>
+            a.status !== 'disabled' &&
+            a.slotsUsed < a.maxProfiles &&
+            !excludeIds.includes(Number(a.id))
+        ) || null
+      );
+    }
+    function refreshAccountStatus(a) {
+      if (a.status === 'disabled') return;
+      if (a.slotsUsed >= a.maxProfiles) {
+        a.status = 'full';
+      } else {
+        a.status = 'available';
+      }
+    }
+
+    // Rendering
+    function renderAccounts() {
+      const tbody = document.getElementById('accounts-table-body');
+      tbody.innerHTML = '';
+      accounts.forEach(a => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${a.email}</td>
+          <td>${a.slotsUsed}/${a.maxProfiles}</td>
+          <td>${renderStatusTag(a.status)}</td>
+          <td>
+            <button class="btn-secondary btn-small" data-action="view-account-customers" data-account-id="${a.id}">View Customers</button>
+            <button class="btn-secondary btn-small" data-action="edit-account" data-account-id="${a.id}">Edit</button>
+            ${
+              a.status === 'disabled'
+                ? '<button class="btn-secondary btn-small" data-action="enable-account" data-account-id="' + a.id + '">Enable</button>'
+                : '<button class="btn-secondary btn-small" data-action="disable-account" data-account-id="' + a.id + '">Mark Not Working</button>'
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderStatusTag(status) {
+      if (status === 'available') return '<span class="tag tag-available">AVAILABLE</span>';
+      if (status === 'full') return '<span class="tag tag-full">FULL</span>';
+      if (status === 'disabled') return '<span class="tag tag-disabled">DISABLED</span>';
+      return status;
+    }
+
+    function renderWarrantyTag(c) {
+      const active = isWarrantyActive(c.warrantyExpiresAt);
+      const cls = active ? 'tag-active' : 'tag-expired';
+      const text = active ? 'ACTIVE' : 'EXPIRED';
+      return `<span class="tag ${cls}">${text}</span>`;
+    }
+
+    function renderCustomerStatusTag(c) {
+      if (c.status === 'stopped') {
+        return '<span class="tag tag-stopped">STOPPED</span>';
+      }
+      return '<span class="tag tag-active">OK</span>';
+    }
+
+    function renderCustomers() {
+      const tbody = document.getElementById('customers-table-body');
+      tbody.innerHTML = '';
+      customers.forEach(c => {
+        const account = accounts.find(a => a.id === c.accountId);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="small">#${c.id}</span></td>
+          <td>${c.whatsapp}</td>
+          <td>${account ? account.email : '-'}</td>
+          <td>${c.profileName || '-'}</td>
+          <td>${renderWarrantyTag(c)} <span class="small">(till ${c.warrantyExpiresAt})</span></td>
+          <td>${renderCustomerStatusTag(c)}</td>
+          <td>
+            <button class="btn-secondary btn-small" data-action="edit-customer" data-customer-id="${c.id}">
+              Edit
+            </button>
+            <button class="btn-secondary btn-small" data-action="mark-customer-stopped" data-customer-id="${c.id}">
+              Mark Not Working
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCustomersForAccount(accountId) {
+      const container = document.getElementById('account-customers-container');
+      if (!container) return;
+      const acc = accounts.find(a => a.id === accountId);
+      const list = customers.filter(c => c.accountId === accountId);
+      if (!acc || list.length === 0) {
+        container.innerHTML = '<div class="small">No customers found for this account.</div>';
+        return;
+      }
+      let html = '<table><thead><tr><th>ID</th><th>WhatsApp</th><th>Profile</th><th>Warranty</th><th>Status</th></tr></thead><tbody>';
+      list.forEach(c => {
+        html += `<tr>
+          <td>#${c.id}</td>
+          <td>${c.whatsapp}</td>
+          <td>${c.profileName || '-'}</td>
+          <td>${renderWarrantyTag(c)}</td>
+          <td>${renderCustomerStatusTag(c)}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function renderRequests() {
+      const tbody = document.getElementById('requests-table-body');
+      tbody.innerHTML = '';
+      replacementRequests.forEach(r => {
+        const c = customers.find(c => c.id === r.customerId);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.id}</td>
+          <td>${c ? c.name + ' #' + c.id : 'Unknown'}</td>
+          <td>${r.reason}</td>
+          <td>${r.status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderDashboard() {
+      document.getElementById('metric-total-accounts').textContent = accounts.length;
+      document.getElementById('metric-total-customers').textContent = customers.length;
+      document.getElementById('metric-available-accounts').textContent =
+        accounts.filter(a => a.status === 'available').length;
+      document.getElementById('metric-active-warranties').textContent =
+        customers.filter(c => isWarrantyActive(c.warrantyExpiresAt)).length;
+      document.getElementById('metric-pending-requests').textContent =
+        replacementRequests.filter(r => r.status === 'pending').length;
+
+      renderAlerts();
+    }
+
+    function renderAlerts() {
+      const container = document.getElementById('alerts-container');
+      const alerts = [];
+
+      // Accounts full
+      accounts
+        .filter(a => a.status === 'full')
+        .forEach(a => alerts.push(`Account FULL: ${a.email}`));
+
+      // Warranties expiring in next 3 days
+      const now = new Date(todayISO());
+      customers.forEach(c => {
+        const exp = new Date(c.warrantyExpiresAt);
+        const diffDays = (exp - now) / (1000 * 60 * 60 * 24);
+        if (diffDays >= 0 && diffDays <= 3) {
+          alerts.push(`Warranty expiring soon for ${c.name} (#${c.id}) on ${c.warrantyExpiresAt}`);
+        }
+      });
+
+      // Accounts with multiple replacements
+      const counts = {};
+      replacementRequests.forEach(r => {
+        if (!r.oldAccountId) return;
+        counts[r.oldAccountId] = (counts[r.oldAccountId] || 0) + 1;
+      });
+      Object.keys(counts).forEach(aid => {
+        if (counts[aid] >= 2) {
+          const acc = accounts.find(a => a.id === Number(aid));
+          if (acc) alerts.push(`Account ${acc.email} has ${counts[aid]} replacement requests.`);
+        }
+      });
+
+      if (alerts.length === 0) {
+        container.innerHTML = '<div class="small">No alerts right now.</div>';
+        return;
+      }
+      container.innerHTML = alerts
+        .map(a => `<div class="alert-item">${a}</div>`)
+        .join('');
+    }
+
+    function recomputeAccountSlots() {
+      accounts.forEach(a => {
+        const used = customers.filter(c => c.accountId === a.id && c.status !== 'stopped').length;
+        a.slotsUsed = used;
+        refreshAccountStatus(a);
+      });
+    }
+
+    function rerenderAll() {
+      recomputeAccountSlots();
+      renderAccounts();
+      renderCustomers();
+      renderRequests();
+      renderDashboard();
+    }
+
+    // Forms handling
+    document.getElementById('form-add-account').addEventListener('submit', e => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const fd = new FormData(e.target);
+      const email = fd.get('email').trim();
+      const password = fd.get('password').trim();
+      const maxProfiles = Number(fd.get('maxProfiles') || 4);
+      const notes = fd.get('notes').trim();
+
+      if (!email || !password) return;
+
+      if (editingAccountId !== null) {
+        const acc = accounts.find(a => a.id === editingAccountId);
+        if (acc) {
+          acc.email = email;
+          acc.password = password;
+          acc.maxProfiles = maxProfiles;
+          acc.notes = notes;
+          if (acc.slotsUsed > acc.maxProfiles) {
+            acc.slotsUsed = acc.maxProfiles;
+          }
+          refreshAccountStatus(acc);
+        }
+        editingAccountId = null;
+        if (submitBtn) submitBtn.textContent = 'Add Account';
+      } else {
+        accounts.push({
+          id: nextAccountId++,
+          email,
+          password,
+          maxProfiles,
+          slotsUsed: 0,
+          status: 'available',
+          notes
+        });
+      }
+
+      e.target.reset();
+      saveToStorage();
+      rerenderAll();
+    });
+
+    // Handle account enable/disable (mark account as not working)
+    document.getElementById('accounts-table-body').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const id = Number(btn.getAttribute('data-account-id'));
+      const action = btn.getAttribute('data-action');
+      const account = accounts.find(a => a.id === id);
+      if (!account) return;
+
+      if (action === 'view-account-customers') {
+        renderCustomersForAccount(account.id);
+      } else if (action === 'edit-account') {
+        const form = document.getElementById('form-add-account');
+        if (form) {
+          form.email.value = account.email;
+          form.password.value = account.password;
+          form.maxProfiles.value = account.maxProfiles;
+          form.notes.value = account.notes || '';
+          const submitBtn = form.querySelector('button[type="submit"]');
+          if (submitBtn) submitBtn.textContent = 'Save Account Changes';
+          editingAccountId = account.id;
+        }
+      } else if (action === 'disable-account') {
+        if (!confirm(`Mark account ${account.email} as not working (disabled)?`)) return;
+        account.status = 'disabled';
+        renderCustomersForAccount(account.id);
+      } else if (action === 'enable-account') {
+        account.status = 'available';
+        refreshAccountStatus(account);
+      }
+      saveToStorage();
+      rerenderAll();
+    });
+
+    document.getElementById('form-add-customer').addEventListener('submit', e => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const fd = new FormData(e.target);
+      const whatsapp = fd.get('whatsapp').trim();
+      let profileName = fd.get('profileName').trim();
+      let purchaseDate = fd.get('purchaseDate');
+
+      if (!purchaseDate) purchaseDate = todayISO();
+      if (!whatsapp) return;
+
+      if (editingCustomerId !== null) {
+        const customer = customers.find(c => c.id === editingCustomerId);
+        if (customer) {
+          customer.whatsapp = whatsapp;
+          customer.profileName = profileName || customer.profileName;
+          customer.purchaseDate = purchaseDate;
+          customer.warrantyExpiresAt = addDays(purchaseDate, 30);
+        }
+        editingCustomerId = null;
+        if (submitBtn) submitBtn.textContent = 'Add Customer & Assign';
+      } else {
+        const account = autoAssignAccount();
+        if (!account) {
+          alert('No account has free slots. Please add more accounts.');
+          return;
+        }
+
+        if (!profileName) {
+          profileName = `Profile ${account.slotsUsed + 1}`;
+        }
+
+        const warrantyExpiresAt = addDays(purchaseDate, 30);
+
+        const customer = {
+          id: nextCustomerId++,
+          name: whatsapp, // keep field for backwards compatibility
+          whatsapp,
+          accountId: account.id,
+          profileName,
+          purchaseDate,
+          warrantyExpiresAt,
+          status: 'active'
+        };
+        customers.push(customer);
+
+        account.slotsUsed += 1;
+        refreshAccountStatus(account);
+      }
+
+      e.target.reset();
+      saveToStorage();
+      rerenderAll();
+    });
+
+    // Handle marking a specific customer as "stopped / not working" from table button
+    document.getElementById('customers-table-body').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const action = btn.getAttribute('data-action');
+      const id = Number(btn.getAttribute('data-customer-id'));
+      const customer = customers.find(c => c.id === id);
+      if (!customer) return;
+
+      if (action === 'edit-customer') {
+        const form = document.getElementById('form-add-customer');
+        if (form) {
+          form.whatsapp.value = customer.whatsapp;
+          form.profileName.value = customer.profileName || '';
+          form.purchaseDate.value = customer.purchaseDate || todayISO();
+          const submitBtn = form.querySelector('button[type="submit"]');
+          if (submitBtn) submitBtn.textContent = 'Save Customer Changes';
+          editingCustomerId = customer.id;
+        }
+      } else if (action === 'mark-customer-stopped') {
+        if (!confirm(`Mark customer ${customer.name} (#${customer.id}) as stopped / not working?`)) return;
+        customer.status = 'stopped';
+      } else {
+        return;
+      }
+      saveToStorage();
+      rerenderAll();
+    });
+
+    // Quick form: find ACCOUNT by email and mark as not working
+    document.getElementById('form-account-find-and-stop').addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const query = (fd.get('query') || '').trim();
+      if (!query) {
+        alert('Please enter part of an account email.');
+        return;
+      }
+
+      const needle = query.toLowerCase();
+      const account = accounts.find(a => (a.email || '').toLowerCase().includes(needle));
+
+      if (!account) {
+        alert('Account not found.');
+        return;
+      }
+
+      if (!confirm(`Mark account ${account.email} as not working (disabled)?`)) {
+        return;
+      }
+
+      account.status = 'disabled';
+      renderCustomersForAccount(account.id);
+      saveToStorage();
+      rerenderAll();
+      e.target.reset();
+    });
+
+    document.getElementById('form-add-request').addEventListener('submit', e => {
+      e.preventDefault();
+      const errEl = document.getElementById('replacement-error');
+      if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+
+      const fd = new FormData(e.target);
+      const customerQuery = (fd.get('customerId') || '').trim();
+      const reason = fd.get('reason');
+      const details = (fd.get('details') || '').trim();
+
+      if (!customerQuery) {
+        if (errEl) { errEl.textContent = 'Please enter customer ID or WhatsApp number.'; errEl.style.display = 'block'; }
+        return;
+      }
+
+      let customer = null;
+      const asNumber = Number(customerQuery);
+      if (!Number.isNaN(asNumber)) {
+        customer = customers.find(c => c.id === asNumber);
+      }
+      if (!customer) {
+        const normalized = customerQuery.replace(/\s/g, '');
+        customer = customers.find(c =>
+          (c.whatsapp || '').replace(/\s/g, '').includes(normalized)
+        );
+      }
+
+      if (!customer) {
+        if (errEl) { errEl.textContent = 'Customer not found. Check ID or WhatsApp number.'; errEl.style.display = 'block'; }
+        return;
+      }
+
+      const warrantyValid = isWarrantyActive(customer.warrantyExpiresAt);
+      const oldAccount = accounts.find(a => a.id === customer.accountId);
+
+      const request = {
+        id: nextRequestId++,
+        customerId: customer.id,
+        reason,
+        details,
+        oldAccountId: oldAccount ? oldAccount.id : null,
+        newAccountId: null,
+        warrantyValidAtRequest: warrantyValid,
+        status: 'pending',
+        requestedAt: todayISO(),
+        processedAt: null
+      };
+      replacementRequests.push(request);
+
+      if (!warrantyValid) {
+        request.status = 'rejected';
+        request.processedAt = todayISO();
+        if (errEl) { errEl.textContent = 'Warranty expired. Replacement rejected.'; errEl.style.display = 'block'; }
+        saveToStorage();
+        rerenderAll();
+        e.target.reset();
+        return;
+      }
+
+      const usedAccountIds = getUsedAccountIdsForCustomer(customer);
+      const newAccount = autoAssignAccount(usedAccountIds);
+      if (!newAccount) {
+        if (errEl) { errEl.textContent = 'Error: Is customer ke liye koi nayi account nahi (jo pehle use nahi hui). Kripya nayi account add karein ya slot khali ho.'; errEl.style.display = 'block'; }
+        saveToStorage();
+        rerenderAll();
+        return;
+      }
+      if (usedAccountIds.includes(Number(newAccount.id))) {
+        if (errEl) { errEl.textContent = 'Error: Same account dobara nahi milega. Nayi account add karein (free slot wali) phir try karein.'; errEl.style.display = 'block'; }
+        saveToStorage();
+        rerenderAll();
+        return;
+      }
+
+      // Adjust slots
+      if (oldAccount) {
+        oldAccount.slotsUsed = Math.max(0, oldAccount.slotsUsed - 1);
+        refreshAccountStatus(oldAccount);
+      }
+      newAccount.slotsUsed += 1;
+      refreshAccountStatus(newAccount);
+
+      // Move customer to the NEW account (so UI updates immediately)
+      customer.accountId = newAccount.id;
+
+      // Finish request
+      request.newAccountId = newAccount.id;
+      request.status = 'completed';
+      request.processedAt = todayISO();
+
+      if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+      alert('Replacement done. Customer ab nayi account par move ho gaya.');
+      e.target.reset();
+      saveToStorage();
+      rerenderAll();
+    });
+
+    // WhatsApp message generator
+    function buildWhatsAppMessage(customer) {
+      const account = accounts.find(a => a.id === customer.accountId);
+      const email = account ? account.email : '[NO ACCOUNT]';
+      const password = account ? account.password : '[NO PASSWORD]';
+      return (
+`Hello,
+
+Here are your Netflix login details:
+
+Email: ${email}
+Password: ${password}
+Profile: ${customer.profileName || '-'}
+
+Please do not change the password or profile name.
+Your warranty is valid until ${customer.warrantyExpiresAt}.
+
+If you face any issues within this period, contact me for replacement.
+
+Thank you!`
+      );
+    }
+
+    let lastGeneratedMessage = '';
+    let lastGeneratedCustomer = null;
+
+    document.getElementById('form-wa-message').addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const query = (fd.get('customerId') || '').trim();
+      const preview = document.getElementById('wa-preview');
+
+      if (!query) {
+        preview.textContent = 'Please enter customer ID or WhatsApp number.';
+        lastGeneratedMessage = '';
+        lastGeneratedCustomer = null;
+        return;
+      }
+
+      let customer = null;
+
+      // Try by numeric ID first
+      const asNumber = Number(query);
+      if (!Number.isNaN(asNumber)) {
+        customer = customers.find(c => c.id === asNumber);
+      }
+
+      // If not found by ID, try by WhatsApp number (partial match)
+      if (!customer) {
+        const normalizedQuery = query.replace(/\s/g, '');
+        customer = customers.find(c =>
+          (c.whatsapp || '').replace(/\s/g, '').includes(normalizedQuery)
+        );
+      }
+
+      if (!customer) {
+        preview.textContent = 'Customer not found.';
+        lastGeneratedMessage = '';
+        lastGeneratedCustomer = null;
+        return;
+      }
+
+      const message = buildWhatsAppMessage(customer);
+      lastGeneratedMessage = message;
+      lastGeneratedCustomer = customer;
+      preview.textContent = message;
+    });
+
+    document.getElementById('btn-copy-message').addEventListener('click', () => {
+      if (!lastGeneratedMessage) {
+        alert('Generate a message first.');
+        return;
+      }
+      navigator.clipboard.writeText(lastGeneratedMessage)
+        .then(() => alert('Message copied to clipboard.'))
+        .catch(() => alert('Failed to copy. Please copy manually.'));
+    });
+
+    document.getElementById('btn-open-wa').addEventListener('click', () => {
+      if (!lastGeneratedMessage || !lastGeneratedCustomer) {
+        alert('Generate a message first.');
+        return;
+      }
+      const phone = (lastGeneratedCustomer.whatsapp || '').replace(/[^\d+]/g, '');
+      if (!phone) {
+        alert('Invalid WhatsApp number for this customer.');
+        return;
+      }
+      const text = encodeURIComponent(lastGeneratedMessage);
+      const url = `https://wa.me/${phone}?text=${text}`;
+      window.open(url, '_blank');
+    });
+
+    // Initial load: prefer saved data, otherwise seed demo
+    if (!loadFromStorage()) {
+      (function seedDemoData() {
+        accounts.push(
+          { id: nextAccountId++, email: 'acc1@example.com', password: 'pass1', maxProfiles: 4, slotsUsed: 1, status: 'available', notes: '' },
+          { id: nextAccountId++, email: 'acc2@example.com', password: 'pass2', maxProfiles: 4, slotsUsed: 4, status: 'full', notes: '' },
+          { id: nextAccountId++, email: 'acc3@example.com', password: 'pass3', maxProfiles: 4, slotsUsed: 0, status: 'available', notes: '' }
+        );
+        const purchaseDate = todayISO();
+        const warrantyExpiresAt = addDays(purchaseDate, 30);
+        customers.push({
+          id: nextCustomerId++,
+          name: 'Demo Customer',
+          whatsapp: '+911234567890',
+          accountId: 1,
+          profileName: 'Demo',
+          purchaseDate,
+          warrantyExpiresAt,
+          status: 'active'
+        });
+        saveToStorage();
+      })();
+    }
+    rerenderAll();
+  </script>
+</body>
+</html>
